@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, status, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.crud import projeto as crud_projeto
+from app.crud import tarefa as crud_tarefa
 from app.schemas.projeto_schema import ProjetoCreate, ProjetoResponse
+from app.schemas.tarefa_schema import TarefaResponse
 from typing import List, Optional
 
 router = APIRouter(prefix="/projetos", tags=["Projetos"])
@@ -34,3 +36,14 @@ def buscar_por_id(projeto_id: int, db: Session = Depends(get_db)):
         )
 
     return db_projeto
+
+
+@router.get("/{projeto_id}/tarefas", response_model=List[TarefaResponse])
+def listar_tarefas_do_projeto(projeto_id: int, db: Session = Depends(get_db)):
+    if crud_projeto.buscar_projeto_por_id(db, projeto_id=projeto_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Projeto não encontrado"
+        )
+
+    return crud_tarefa.listar_tarefas_do_projeto(db, projeto_id=projeto_id)
