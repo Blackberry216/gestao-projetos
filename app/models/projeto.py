@@ -11,5 +11,5 @@ class Projeto(Base):
     objetivo = Column(String, nullable=True)
     data_inicio = Column(Date, default=datetime.date.today)
     prazo_previsto = Column(Date, nullable=False)
-    status = Column(String, default="Planeado")
+    status = Column(String, default="Planejado")
     cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)
