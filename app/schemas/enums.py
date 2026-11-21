@@ -12,3 +12,10 @@ class Prioridade(str, Enum):
     alta = "Alta"
     media = "Média"
     baixa = "Baixa"
+
+
+class StatusProjeto(str, Enum):
+    planejado = "Planejado"
+    em_andamento = "Em Andamento"
+    concluido = "Concluído"
+    cancelado = "Cancelado"

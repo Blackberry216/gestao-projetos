@@ -5,6 +5,7 @@ from app.crud import projeto as crud_projeto
 from app.crud import tarefa as crud_tarefa
 from app.schemas.projeto_schema import ProjetoCreate, ProjetoResponse
 from app.schemas.tarefa_schema import TarefaResponse
+from app.schemas.enums import StatusProjeto
 from typing import List, Optional
 
 router = APIRouter(prefix="/projetos", tags=["Projetos"])
@@ -19,10 +20,17 @@ def criar(projeto: ProjetoCreate, db: Session = Depends(get_db)):
 def listar(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
-    status_projeto: Optional[str] = Query(None, alias="status"),
+    status_projeto: Optional[StatusProjeto] = Query(None, alias="status"),
+    cliente_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
 ):
-    return crud_projeto.listar_projetos(db=db, page=page, size=size, status=status_projeto)
+    return crud_projeto.listar_projetos(
+        db=db,
+        page=page,
+        size=size,
+        status=status_projeto.value if status_projeto else None,
+        cliente_id=cliente_id,
+    )
 
 
 @router.get("/{projeto_id}", response_model=ProjetoResponse)
