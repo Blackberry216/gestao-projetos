@@ -13,11 +13,19 @@ def criar_projeto(db: Session, projeto: ProjetoCreate):
     return db_projeto
 
 
-def listar_projetos(db: Session, page: int = 1, size: int = 10, status: Optional[str] = None):
+def listar_projetos(
+    db: Session,
+    page: int = 1,
+    size: int = 10,
+    status: Optional[str] = None,
+    cliente_id: Optional[int] = None,
+):
     query = db.query(Projeto)
 
     if status:
         query = query.filter(Projeto.status == status)
+    if cliente_id:
+        query = query.filter(Projeto.cliente_id == cliente_id)
 
     return query.order_by(Projeto.id).offset((page - 1) * size).limit(size).all()
 

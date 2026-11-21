@@ -20,9 +20,16 @@ def listar(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     status_projeto: Optional[str] = Query(None, alias="status"),
+    cliente_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
 ):
-    return crud_projeto.listar_projetos(db=db, page=page, size=size, status=status_projeto)
+    return crud_projeto.listar_projetos(
+        db=db,
+        page=page,
+        size=size,
+        status=status_projeto,
+        cliente_id=cliente_id,
+    )
 
 
 @router.get("/{projeto_id}", response_model=ProjetoResponse)
