@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, Numeric
 import datetime
 from app.database import Base
 
@@ -13,3 +13,4 @@ class Projeto(Base):
     prazo_previsto = Column(Date, nullable=False)
     status = Column(String, default="Planejado")
     cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)
+    orcamento = Column(Numeric(12, 2), nullable=True)
