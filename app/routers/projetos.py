@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, status, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.crud import projeto as crud_projeto
 from app.crud import tarefa as crud_tarefa
-from app.schemas.projeto_schema import ProjetoCreate, ProjetoResponse
+from app.crud import cliente as crud_cliente
+from app.schemas.projeto_schema import ProjetoCreate, ProjetoUpdate, ProjetoResponse
 from app.schemas.tarefa_schema import TarefaResponse
 from app.schemas.enums import StatusProjeto
 from typing import List, Optional
@@ -13,6 +15,13 @@ router = APIRouter(prefix="/projetos", tags=["Projetos"])
 
 @router.post("/", response_model=ProjetoResponse, status_code=status.HTTP_201_CREATED)
 def criar(projeto: ProjetoCreate, db: Session = Depends(get_db)):
+    if projeto.cliente_id is not None:
+        if crud_cliente.buscar_cliente_por_id(db, cliente_id=projeto.cliente_id) is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Cliente não encontrado"
+            )
+
     return crud_projeto.criar_projeto(db=db, projeto=projeto)
 
 
@@ -44,6 +53,43 @@ def buscar_por_id(projeto_id: int, db: Session = Depends(get_db)):
         )
 
     return db_projeto
+
+
+@router.put("/{projeto_id}", response_model=ProjetoResponse)
+def atualizar(projeto_id: int, dados: ProjetoUpdate, db: Session = Depends(get_db)):
+    if dados.cliente_id is not None:
+        if crud_cliente.buscar_cliente_por_id(db, cliente_id=dados.cliente_id) is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Cliente não encontrado"
+            )
+
+    db_projeto = crud_projeto.atualizar_projeto(db, projeto_id=projeto_id, dados=dados)
+
+    if db_projeto is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Projeto não encontrado"
+        )
+
+    return db_projeto
+
+
+@router.delete("/{projeto_id}", status_code=status.HTTP_204_NO_CONTENT)
+def deletar(projeto_id: int, db: Session = Depends(get_db)):
+    try:
+        apagado = crud_projeto.deletar_projeto(db, projeto_id=projeto_id)
+    except IntegrityError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Não é possível excluir o projeto porque ele possui tarefas ou profissionais alocados"
+        )
+
+    if not apagado:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Projeto não encontrado"
+        )
 
 
 @router.get("/{projeto_id}/tarefas", response_model=List[TarefaResponse])

@@ -1,8 +1,9 @@
 from typing import Optional
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.models.projeto import Projeto
 from app.models.projeto_profissional import ProjetoProfissional
-from app.schemas.projeto_schema import ProjetoCreate
+from app.schemas.projeto_schema import ProjetoCreate, ProjetoUpdate
 
 
 def criar_projeto(db: Session, projeto: ProjetoCreate):
@@ -42,3 +43,33 @@ def listar_projetos_do_profissional(db: Session, profissional_id: int):
         .order_by(Projeto.id)
         .all()
     )
+
+
+def atualizar_projeto(db: Session, projeto_id: int, dados: ProjetoUpdate):
+    db_projeto = buscar_projeto_por_id(db, projeto_id=projeto_id)
+
+    if db_projeto is None:
+        return None
+
+    for campo, valor in dados.model_dump(exclude_none=True).items():
+        setattr(db_projeto, campo, valor)
+
+    db.commit()
+    db.refresh(db_projeto)
+    return db_projeto
+
+
+def deletar_projeto(db: Session, projeto_id: int):
+    db_projeto = buscar_projeto_por_id(db, projeto_id=projeto_id)
+
+    if db_projeto is None:
+        return False
+
+    try:
+        db.delete(db_projeto)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise
+
+    return True
