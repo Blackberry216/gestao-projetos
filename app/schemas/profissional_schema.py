@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
 
@@ -8,8 +8,13 @@ class ProfissionalCreate(BaseModel):
     cargo: str = Field(..., description="Cargo ou especialidade (ex: Desenvolvedor, Analista, Testador, Gerente)")
 
 
-class ProfissionalResponse(ProfissionalCreate):
-    id: int
+class ProfissionalUpdate(BaseModel):
+    nome: Optional[str] = Field(None, description="Novo nome do profissional")
+    email: Optional[str] = Field(None, description="Novo e-mail do profissional")
+    cargo: Optional[str] = Field(None, description="Novo cargo ou especialidade")
 
-    class Config:
-        from_attributes = True
+
+class ProfissionalResponse(ProfissionalCreate):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int

@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, status, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
 from app.crud import cliente as crud_cliente
-from app.schemas.cliente_schema import ClienteCreate, ClienteResponse
+from app.schemas.cliente_schema import ClienteCreate, ClienteUpdate, ClienteResponse
 
 router = APIRouter(prefix="/clientes", tags=["Clientes"])
 
@@ -29,3 +30,33 @@ def buscar_por_id(cliente_id: int, db: Session = Depends(get_db)):
         )
 
     return db_cliente
+
+
+@router.put("/{cliente_id}", response_model=ClienteResponse)
+def atualizar(cliente_id: int, dados: ClienteUpdate, db: Session = Depends(get_db)):
+    db_cliente = crud_cliente.atualizar_cliente(db, cliente_id=cliente_id, dados=dados)
+
+    if db_cliente is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cliente não encontrado"
+        )
+
+    return db_cliente
+
+
+@router.delete("/{cliente_id}", status_code=status.HTTP_204_NO_CONTENT)
+def deletar(cliente_id: int, db: Session = Depends(get_db)):
+    try:
+        apagado = crud_cliente.deletar_cliente(db, cliente_id=cliente_id)
+    except IntegrityError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Não é possível excluir o cliente porque ele possui projetos"
+        )
+
+    if not apagado:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cliente não encontrado"
+        )

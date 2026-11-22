@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
 
@@ -7,8 +7,12 @@ class ClienteCreate(BaseModel):
     setor: Optional[str] = Field(None, description="Setor de atuação do cliente")
 
 
-class ClienteResponse(ClienteCreate):
-    id: int
+class ClienteUpdate(BaseModel):
+    nome: Optional[str] = Field(None, description="Novo nome do cliente")
+    setor: Optional[str] = Field(None, description="Novo setor de atuação do cliente")
 
-    class Config:
-        from_attributes = True
+
+class ClienteResponse(ClienteCreate):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
