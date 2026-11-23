@@ -4,7 +4,7 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 
 from app.database import Base, DATABASE_URL
-from app.models import projeto, cliente, profissional, tarefa, projeto_profissional
+from app.models import projeto, cliente, profissional, tarefa, projeto_profissional, entrega
 
 config = context.config
 config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
