@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.crud import dependencia as crud_dependencia
+from app.crud import tarefa as crud_tarefa
 from app.schemas.enums import StatusTarefa
 
 
@@ -31,4 +32,25 @@ def validar_rn001_dependencias_concluidas(db: Session, tarefa_id: int, novo_stat
         )
 
 
+def validar_rn003_cancelamento_com_dependentes(db: Session, tarefa_id: int, novo_status: str):
+    if novo_status != StatusTarefa.cancelada.value:
+        return
 
+    dependentes = crud_tarefa.listar_tarefas_dependentes(db, tarefa_id=tarefa_id)
+    dependentes_ativos = [
+        dep for dep in dependentes
+        if dep.status not in {
+            StatusTarefa.cancelada.value,
+            StatusTarefa.concluida.value,
+        }
+    ]
+
+    if dependentes_ativos:
+        ids_ativos = [dep.id for dep in dependentes_ativos]
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Não é possível cancelar a tarefa {tarefa_id} "
+                f"porque existem tarefas dependentes ativas (IDs: {ids_ativos})."
+            ),
+        )

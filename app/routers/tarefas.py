@@ -89,6 +89,11 @@ def atualizar(tarefa_id: int, dados: TarefaUpdate, db: Session = Depends(get_db)
             tarefa_id=tarefa_id,
             novo_status=dados.status,
         )
+        tarefa_service.validar_rn003_cancelamento_com_dependentes(
+            db=db,
+            tarefa_id=tarefa_id,
+            novo_status=dados.status,
+        )
 
     db_tarefa = crud_tarefa.atualizar_tarefa(db, tarefa_id=tarefa_id, dados=dados)
 
