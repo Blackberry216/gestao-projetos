@@ -8,7 +8,7 @@ from app.crud import projeto as crud_projeto
 from app.crud import profissional as crud_profissional
 from app.schemas.tarefa_schema import TarefaCreate, TarefaUpdate, TarefaResponse
 from app.schemas.enums import StatusTarefa, Prioridade
-
+from app.services import tarefa_service
 router = APIRouter(prefix="/tarefas", tags=["Tarefas"])
 
 
@@ -75,6 +75,20 @@ def atualizar(tarefa_id: int, dados: TarefaUpdate, db: Session = Depends(get_db)
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Profissional responsável não encontrado"
             )
+
+    tarefa_atual = crud_tarefa.buscar_tarefa_por_id(db, tarefa_id=tarefa_id)
+    if tarefa_atual is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tarefa não encontrada"
+        )
+
+    if dados.status is not None and dados.status != tarefa_atual.status:
+        tarefa_service.validar_rn001_dependencias_concluidas(
+            db=db,
+            tarefa_id=tarefa_id,
+            novo_status=dados.status,
+        )
 
     db_tarefa = crud_tarefa.atualizar_tarefa(db, tarefa_id=tarefa_id, dados=dados)
 
