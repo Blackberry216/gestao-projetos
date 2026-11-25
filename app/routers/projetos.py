@@ -5,9 +5,12 @@ from app.database import get_db
 from app.crud import projeto as crud_projeto
 from app.crud import tarefa as crud_tarefa
 from app.crud import cliente as crud_cliente
+from app.crud import profissional as crud_profissional
+from app.models.projeto_profissional import ProjetoProfissional
 from app.schemas.projeto_schema import ProjetoCreate, ProjetoUpdate, ProjetoResponse
 from app.schemas.tarefa_schema import TarefaResponse
 from app.schemas.enums import StatusProjeto
+from app.schemas.alocacao_schema import AlocacaoCreate, AlocacaoResponse
 from typing import List, Optional
 
 router = APIRouter(prefix="/projetos", tags=["Projetos"])
@@ -101,3 +104,24 @@ def listar_tarefas_do_projeto(projeto_id: int, db: Session = Depends(get_db)):
         )
 
     return crud_tarefa.listar_tarefas_do_projeto(db, projeto_id=projeto_id)
+
+@router.post("/{projeto_id}/equipe", response_model=AlocacaoResponse, status_code=status.HTTP_201_CREATED)
+def alocar_equipe(projeto_id: int, dados: AlocacaoCreate, db: Session = Depends(get_db)):
+    if crud_projeto.buscar_projeto_por_id(db, projeto_id=projeto_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projeto não encontrado")
+        
+    if crud_profissional.buscar_profissional_por_id(db, profissional_id=dados.profissional_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profissional não encontrado")
+        
+    alocacao_existente = db.query(ProjetoProfissional).filter(
+        ProjetoProfissional.projeto_id == projeto_id,
+        ProjetoProfissional.profissional_id == dados.profissional_id
+    ).first()
+    
+    if alocacao_existente:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, 
+            detail="Este profissional já está alocado neste projeto"
+        )
+
+    return crud_projeto.alocar_profissional_no_projeto(db=db, projeto_id=projeto_id, dados=dados)

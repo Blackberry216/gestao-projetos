@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.models.projeto import Projeto
 from app.models.projeto_profissional import ProjetoProfissional
+from app.schemas.alocacao_schema import AlocacaoCreate
 from app.schemas.projeto_schema import ProjetoCreate, ProjetoUpdate
 
 
@@ -73,3 +74,14 @@ def deletar_projeto(db: Session, projeto_id: int):
         raise
 
     return True
+
+def alocar_profissional_no_projeto(db: Session, projeto_id: int, dados: AlocacaoCreate):
+    db_alocacao = ProjetoProfissional(
+        projeto_id=projeto_id,
+        profissional_id=dados.profissional_id,
+        responsabilidade=dados.responsabilidade
+    )
+    db.add(db_alocacao)
+    db.commit()
+    db.refresh(db_alocacao)
+    return db_alocacao
