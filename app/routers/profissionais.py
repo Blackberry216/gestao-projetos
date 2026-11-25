@@ -59,18 +59,16 @@ def atualizar(profissional_id: int, dados: ProfissionalUpdate, db: Session = Dep
 def deletar(profissional_id: int, db: Session = Depends(get_db)):
     try:
         apagado = crud_profissional.deletar_profissional(db, profissional_id=profissional_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except IntegrityError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Não é possível excluir o profissional porque ele possui tarefas ou alocações em projetos"
+            detail="Não é possível excluir o profissional porque ele possui vínculos no sistema."
         )
 
     if not apagado:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Profissional não encontrado"
-        )
-
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profissional não encontrado")
 
 @router.get("/{profissional_id}/projetos", response_model=List[ProjetoResponse])
 def listar_projetos_do_profissional(profissional_id: int, db: Session = Depends(get_db)):
@@ -80,4 +78,12 @@ def listar_projetos_do_profissional(profissional_id: int, db: Session = Depends(
             detail="Profissional não encontrado"
         )
 
-    return crud_projeto.listar_projetos_do_profissional(db, profissional_id=profissional_id)
+    projetos = crud_projeto.listar_projetos_do_profissional(db, profissional_id=profissional_id)
+    
+    if not projetos:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Este profissional não está alocado em nenhum projeto"
+        )
+        
+    return projetos

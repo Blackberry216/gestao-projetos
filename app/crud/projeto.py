@@ -5,6 +5,8 @@ from app.models.projeto import Projeto
 from app.models.projeto_profissional import ProjetoProfissional
 from app.schemas.alocacao_schema import AlocacaoCreate
 from app.schemas.projeto_schema import ProjetoCreate, ProjetoUpdate
+from app.models.tarefa import Tarefa
+from app.models.entrega import Entrega
 
 
 def criar_projeto(db: Session, projeto: ProjetoCreate):
@@ -65,6 +67,12 @@ def deletar_projeto(db: Session, projeto_id: int):
 
     if db_projeto is None:
         return False
+
+    if db.query(Tarefa).filter(Tarefa.projeto_id == projeto_id).first():
+        raise ValueError("O projeto possui tarefas cadastradas e não pode ser excluído.")
+        
+    if db.query(Entrega).filter(Entrega.projeto_id == projeto_id).first():
+        raise ValueError("O projeto possui entregas cadastradas e não pode ser excluído.")
 
     try:
         db.delete(db_projeto)

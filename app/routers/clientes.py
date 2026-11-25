@@ -52,14 +52,13 @@ def atualizar(cliente_id: int, dados: ClienteUpdate, db: Session = Depends(get_d
 def deletar(cliente_id: int, db: Session = Depends(get_db)):
     try:
         apagado = crud_cliente.deletar_cliente(db, cliente_id=cliente_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except IntegrityError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Não é possível excluir o cliente porque ele possui projetos"
+            detail="Não é possível excluir o cliente porque ele possui projetos vinculados."
         )
 
     if not apagado:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cliente não encontrado"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente não encontrado")

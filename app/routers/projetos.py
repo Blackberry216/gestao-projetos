@@ -90,10 +90,15 @@ def atualizar(projeto_id: int, dados: ProjetoUpdate, db: Session = Depends(get_d
 def deletar(projeto_id: int, db: Session = Depends(get_db)):
     try:
         apagado = crud_projeto.deletar_projeto(db, projeto_id=projeto_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e)
+        )
     except IntegrityError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Não é possível excluir o projeto porque ele possui tarefas ou profissionais alocados"
+            detail="Não é possível excluir o projeto porque ele possui profissionais alocados."
         )
 
     if not apagado:
@@ -101,7 +106,6 @@ def deletar(projeto_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Projeto não encontrado"
         )
-
 
 @router.get("/{projeto_id}/tarefas", response_model=List[TarefaResponse])
 def listar_tarefas_do_projeto(projeto_id: int, db: Session = Depends(get_db)):

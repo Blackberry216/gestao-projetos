@@ -2,7 +2,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.models.cliente import Cliente
 from app.schemas.cliente_schema import ClienteCreate, ClienteUpdate
-
+from app.models.projeto import Projeto
 
 def criar_cliente(db: Session, cliente: ClienteCreate):
     db_cliente = Cliente(**cliente.model_dump())
@@ -36,9 +36,11 @@ def atualizar_cliente(db: Session, cliente_id: int, dados: ClienteUpdate):
 
 def deletar_cliente(db: Session, cliente_id: int):
     db_cliente = buscar_cliente_por_id(db, cliente_id=cliente_id)
-
     if db_cliente is None:
         return False
+
+    if db.query(Projeto).filter(Projeto.cliente_id == cliente_id).first():
+        raise ValueError("O cliente possui projetos cadastrados e não pode ser excluído.")
 
     try:
         db.delete(db_cliente)
