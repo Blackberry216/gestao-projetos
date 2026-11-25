@@ -11,6 +11,8 @@ from app.schemas.projeto_schema import ProjetoCreate, ProjetoUpdate, ProjetoResp
 from app.schemas.tarefa_schema import TarefaResponse
 from app.schemas.enums import StatusProjeto
 from app.schemas.alocacao_schema import AlocacaoCreate, AlocacaoResponse
+from app.schemas.progresso_schema import ProgressoProjeto
+from app.services import projeto_service
 from typing import List, Optional
 
 router = APIRouter(prefix="/projetos", tags=["Projetos"])
@@ -125,3 +127,13 @@ def alocar_equipe(projeto_id: int, dados: AlocacaoCreate, db: Session = Depends(
         )
 
     return crud_projeto.alocar_profissional_no_projeto(db=db, projeto_id=projeto_id, dados=dados)
+
+@router.get("/{projeto_id}/progresso", response_model=ProgressoProjeto)
+def obter_progresso(projeto_id: int, db: Session = Depends(get_db)):
+    if crud_projeto.buscar_projeto_por_id(db, projeto_id=projeto_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Projeto não encontrado"
+        )
+        
+    return projeto_service.calcular_progresso_projeto(db=db, projeto_id=projeto_id)
