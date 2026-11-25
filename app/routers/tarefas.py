@@ -108,12 +108,12 @@ def atualizar(tarefa_id: int, dados: TarefaUpdate, db: Session = Depends(get_db)
         )
 
     if dados.status is not None and dados.status != tarefa_atual.status:
-        tarefa_service.validar_rn001_dependencias_concluidas(
+        tarefa_service.verificar_conclusao(
             db=db,
             tarefa_id=tarefa_id,
             novo_status=dados.status,
         )
-        tarefa_service.validar_rn003_cancelamento_com_dependentes(
+        tarefa_service.verificar_cancelamento(
             db=db,
             tarefa_id=tarefa_id,
             novo_status=dados.status,

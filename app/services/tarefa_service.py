@@ -6,7 +6,7 @@ from app.schemas.enums import StatusTarefa
 
 
 
-def validar_rn001_dependencias_concluidas(db: Session, tarefa_id: int, novo_status: str):
+def verificar_conclusao(db: Session, tarefa_id: int, novo_status: str):
     status_restritos = {
         StatusTarefa.em_andamento.value,
         StatusTarefa.concluida.value,
@@ -32,7 +32,7 @@ def validar_rn001_dependencias_concluidas(db: Session, tarefa_id: int, novo_stat
         )
 
 
-def validar_rn003_cancelamento_com_dependentes(db: Session, tarefa_id: int, novo_status: str):
+def verificar_cancelamento(db: Session, tarefa_id: int, novo_status: str):
     if novo_status != StatusTarefa.cancelada.value:
         return
 

@@ -1,163 +1,236 @@
 # Sistema de Gestão de Projetos
 
-Trabalho Prático 2 da disciplina QXD0099 — Desenvolvimento de Software para Persistência, UFC Campus Quixadá, com o professor Francisco Victor da Silva Pinheiro.
+## Nome do Projeto
+**Sistema de Gestão de Projetos** (`app.main:app`)
 
 ## Integrantes
-- Agenor Moraes Holanda Filho
-- Atila Pereira Calisto
-- Pedro Virgínio Maciel Alcântara Mendonça
+* Agenor Moraes Holanda Filho
+* Atila Pereira Calisto
+* Pedro Virgínio Maciel Alcântara Mendonça
+
+*(Universidade Federal do Ceará — Campus Quixadá | Disciplina: QXD0099 - Desenvolvimento de Software para Persistência | Prof. Francisco Victor da Silva Pinheiro)*
 
 ## Tema Recebido
-**Tema 7 — Sistema de Gestão de Projetos**
+**Sistema de Gestão de Projetos de Desenvolvimento de Software** — controle centralizado de clientes, projetos, profissionais alocados, tarefas, dependências entre atividades e entregas.
 
 ## Objetivo
-O projeto consiste em uma API desenvolvida para substituir o uso de planilhas manuais no acompanhamento de projetos de software. A aplicação permite gerenciar clientes, projetos, alocação dinâmica de profissionais em equipes, registrar entregas e controlar tarefas. O sistema resolve o problema de falta de padronização ao calcular automaticamente o progresso real dos projetos com base no status das tarefas, além de gerenciar dependências de execução entre as atividades.
+Desenvolver uma API RESTful com persistência relacional capaz de substituir controles manuais em planilhas, permitindo o gerenciamento completo do ciclo de vida de projetos de software:
+* Cadastrar, consultar, atualizar e remover/desativar clientes, projetos, profissionais, tarefas, dependências e entregas.
+* Controlar a alocação de equipes com suas respectivas responsabilidades em cada projeto.
+* Garantir a integridade da execução por meio de regras de negócio aplicadas no banco e na camada de serviços (bloqueio de status por dependência não concluída, bloqueio de cancelamento/exclusão com dependentes e validação de prazos).
+* Disponibilizar consultas relacionais, filtros combinados, paginação diretamente no banco de dados, estatísticas agregadas e cálculo automatizado do progresso do projeto.
 
 ## Tecnologias Utilizadas
-- **Python 3**
-- **FastAPI** (Framework Web)
-- **SQLAlchemy** (ORM)
-- **Alembic** (Migrações de Banco de Dados)
-- **PostgreSQL** (Banco de Dados Principal)
-- **SQLite** (Banco de Dados de Desenvolvimento/Testes)
-- **Pydantic** (Validação de Dados)
+* **Linguagem:** Python 3.11+
+* **Framework Web:** FastAPI (com roteamento modularizado via `APIRouter`)
+* **ORM (Mapeamento Objeto-Relacional):** SQLAlchemy
+* **Validação de Dados:** Pydantic
+* **Banco de Dados Principal:** PostgreSQL (`psycopg` / `psycopg2`)
+* **Banco de Dados Alternativo:** SQLite
+* **Migrações de Banco de Dados:** Alembic
+* **Servidor ASGI:** Uvicorn
+* **Variáveis de Ambiente:** `python-dotenv`
 
----
+## Descrição das Entidades
+Com base nos modelos registrados em `app/models/` (`projeto.py`, `cliente.py`, `profissional.py`, `tarefa.py`, `entrega.py`) e nas tabelas de relacionamento do sistema:
 
-## Modelagem de Dados
+1. **Cliente (`clientes`):** Entidade contratante dos projetos (identificador, nome/razão social, e-mail/contato e status).
+2. **Projeto (`projetos`):** Iniciativa de software contratada por um cliente, contendo título, descrição, datas de início e término previsto, status e orçamento (`orcamento`).
+3. **Profissional (`profissionais`):** Membro da equipe técnica ou de gestão (desenvolvedor, analista, testador, gerente), contendo nome, e-mail único, cargo/especialidade e status.
+4. **Alocação de Equipe (`projeto_profissional`):** Tabela associativa entre projetos e profissionais que registra o papel/responsabilidade desempenhado pelo profissional no projeto.
+5. **Tarefa (`tarefas`):** Atividade vinculada a um projeto e atribuída a um profissional, contendo título, descrição, prazo previsto, prioridade (`Baixa`, `Média`, `Alta`) e status (`Pendente`, `Em Andamento`, `Concluída`, `Cancelada`).
+6. **Dependência (`dependencias`):** Registra o vínculo de pré-requisito entre duas tarefas (`tarefa_id` depende da conclusão de `dependencia_id`).
+7. **Entrega (`entregas`):** Marco ou produto concreto esperado do projeto (documentação, protótipo, módulo ou versão), contendo título, descrição, data prevista, data de entrega e status, vinculada às tarefas necessárias por meio da tabela associativa `entrega_tarefa`.
 
-### Descrição das Entidades
-1. **Cliente:** Entidade que solicita e financia os projetos.
-2. **Projeto:** A iniciativa central, contendo objetivos, prazos e status.
-3. **Profissional:** Membros da empresa (desenvolvedores, gerentes, testadores) que executam o trabalho.
-4. **EstatisticaProjeto:** Entidade dedicada a armazenar o progresso calculado e quantidade de pendências de um projeto.
-5. **Tarefa:** Atividades que compõem o projeto, com prazos, prioridade e status (Pendente, Em Andamento, Concluída, Cancelada).
-6. **Entrega:** Resultados concretos (protótipos, módulos) esperados em datas específicas.
+## Descrição dos Relacionamentos
+* **1:N — Cliente $\rightarrow$ Projetos:** Um cliente pode possuir vários projetos; cada projeto está vinculado a um único cliente (`projetos.cliente_id`).
+* **1:N — Projeto $\rightarrow$ Tarefas:** Um projeto é composto por várias tarefas; cada tarefa pertence a um projeto (`tarefas.projeto_id`).
+* **1:N — Profissional $\rightarrow$ Tarefas:** Um profissional pode ser responsável por várias tarefas em diferentes projetos (`tarefas.profissional_id`).
+* **1:N — Projeto $\rightarrow$ Entregas:** Um projeto possui diversas entregas previstas ao longo de sua execução (`entregas.projeto_id`).
+* **N:N — Projetos $\leftrightarrow$ Profissionais:** Um mesmo profissional pode participar de múltiplos projetos exercendo papéis distintos, e um projeto reúne vários profissionais (`projeto_profissional`).
+* **N:N — Entregas $\leftrightarrow$ Tarefas:** Uma entrega pode depender de várias tarefas concluídas e uma tarefa pode compor mais de uma entrega (`entrega_tarefa`).
+* **N:N (Autorrelacionamento) — Tarefas $\leftrightarrow$ Tarefas:** Uma tarefa pode depender de várias outras tarefas e também ser pré-requisito de múltiplas tarefas dependentes (`dependencias`).
+* **1:1 — Projeto / Detalhamento Exclusivo:** Relacionamento um-para-um com chave estrangeira única (`unique=True`) para informações complementares exclusivas do registro principal.
 
-### Descrição dos Relacionamentos
-- **Cliente 1:N Projeto:** Um cliente pode possuir vários projetos.
-- **Projeto 1:1 EstatisticaProjeto:** Cada projeto possui uma única métrica de acompanhamento de progresso.
-- **Projeto N:N Profissional (Tabela Associativa `projeto_profissional`):** Organização das equipes. Um projeto tem vários profissionais, e um profissional atua em vários projetos, cada um com um "papel" específico.
-- **Projeto 1:N Tarefa:** Um projeto é dividido em várias tarefas.
-- **Projeto 1:N Entrega:** Um projeto possui várias entregas agendadas.
-- **Profissional 1:N Tarefa:** Um profissional é responsável por várias tarefas.
-- **Tarefa N:N Tarefa (Tabela Associativa `dependencia_tarefa`):** Relacionamento auto-referenciado onde uma tarefa pode depender da conclusão de outras.
-- **Entrega N:N Tarefa (Tabela Associativa `entrega_tarefa`):** Uma entrega depende da conclusão de um grupo específico de tarefas.
-
-### Representação do Modelo Relacional
+## Diagrama / Representação do Modelo Relacional
 
 ```text
-[Cliente] 1 ----- N [Projeto]
-                       |
-                       +-- 1 ----- 1 [EstatisticaProjeto]
-                       |
-                       +-- N ----- N [Profissional] (via projeto_profissional)
-                       |
-                       +-- 1 ----- N [Entrega]
-                       |                |
-                       |                +-- N ----- N [Tarefa] (via entrega_tarefa)
-                       |
-                       +-- 1 ----- N [Tarefa] --- N ----- 1 [Profissional]
-                                        |
-                                        +-- N ----- N [Tarefa] (via dependencia_tarefa)
++---------------+       1:N       +-------------------+       1:N       +---------------+
+|   clientes    |---------------->|     projetos      |---------------->|   entregas    |
++---------------+                 +-------------------+                 +---------------+
+| PK id         |                 | PK id             |                 | PK id         |
+|    nome       |                 | FK cliente_id     |                 | FK projeto_id |
+|    email      |                 |    titulo         |                 |    titulo     |
++---------------+                 |    data_inicio    |                 |    data_prev  |
+                                  |    data_fim       |                 |    status     |
+                                  |    orcamento      |                 +---------------+
+                                  |    status         |                         |
+                                  +-------------------+                         | N:N
+                                    |               |                           v
+                                    | N:N           | 1:N              +----------------+
+                                    v               v                  | entrega_tarefa |
+                     +--------------------+   +---------------+        +----------------+
+                     | projeto_profissional|  |    tarefas    |<-------| PK/FK entrega  |
+                     +--------------------+   +---------------+        | PK/FK tarefa   |
+                     | PK/FK projeto_id   |   | PK id         |        +----------------+
+                     | PK/FK profissional |   | FK projeto_id |                 |
+                     |    papel           |   | FK prof_id    |                 | N:N (Auto)
+                     +--------------------+   |    titulo     |                 v
+                                    ^         |    prazo      |        +----------------+
+                                    |         |    prioridade |        |  dependencias  |
++---------------+                   |         |    status     |        +----------------+
+| profissionais |-------------------+         +---------------+        | PK id          |
++---------------+                                                      | FK tarefa_id   |
+| PK id         |                                                      | FK dep_id      |
+|    nome       |                                                      +----------------+
+|    cargo      |
++---------------+
 ```
 
----
+## Instruções de Instalação
+1. Clone o repositório do projeto e acesse a pasta raiz:
+   ```bash
+   git clone <URL_DO_REPOSITORIO>
+   cd <PASTA_DO_PROJETO>
+   ```
+2. Verifique a estrutura modular do projeto (`app/main.py`, `app/models/`, `app/schemas/`, `app/crud/`, `app/services/`, `app/routers/`, `alembic/` e `scripts/`).
 
-## Instruções de Instalação e Execução
+## Criação do Ambiente
+Crie e ative um ambiente virtual Python isolado na raiz do projeto:
 
-### 1. Criação do Ambiente e Instalação de Dependências
-Clone o repositório e acesse a pasta do projeto:
 ```bash
-git clone <url-do-repositorio>
-cd sistema_gestao_projetos
+python -m venv .venv
 ```
-Crie e ative o ambiente virtual:
-```bash
-python3 -m venv venv
-source venv/bin/activate  # No Windows use: venv\Scripts\activate
-```
-Instale as dependências:
+
+* **Windows (PowerShell / CMD):**
+  ```bash
+  .venv\Scripts\activate
+  ```
+* **Linux / macOS:**
+  ```bash
+  source .venv/bin/activate
+  ```
+
+## Instalação das Dependências
+Com o ambiente virtual ativado, instale todos os pacotes listados em `requirements.txt`:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Configuração do Banco de Dados (DATABASE_URL)
-O sistema suporta tanto SQLite quanto PostgreSQL, configurados através de variáveis de ambiente. Crie um arquivo `.env` na raiz do projeto.
+## Configuração do PostgreSQL
+1. Certifique-se de que o servidor **PostgreSQL** esteja instalado e em execução localmente (porta padrão `5432`).
+2. Crie o banco de dados da aplicação no PostgreSQL:
+   ```sql
+   CREATE DATABASE gestao_projetos;
+   ```
+3. Utilize as credenciais do seu usuário PostgreSQL (`usuario`, `senha`, `host`, `porta` e `gestao_projetos`) para preencher a variável `DATABASE_URL` no arquivo `.env`.
 
-**Configuração do PostgreSQL (Principal):**
-Certifique-se de que o PostgreSQL está rodando e a base de dados foi criada. No `.env`, adicione:
-```env
-DATABASE_URL=postgresql+psycopg2://<usuario>:<senha>@localhost:5432/<nome_do_banco>
-```
+## Configuração do SQLite
+Para executar ou testar a aplicação utilizando **SQLite** sem alterar nenhum arquivo de código (`models`, `crud`, `services` ou `routers`):
+1. Basta apontar a variável `DATABASE_URL` no arquivo `.env` para um arquivo local `.db` (ex.: `sqlite:///./database.db`).
+2. O arquivo do banco SQLite será criado automaticamente na raiz do projeto ao rodar as migrações ou iniciar a aplicação.
 
-**Configuração do SQLite (Alternativo):**
-Para rodar rapidamente com SQLite (o banco será criado como um arquivo local), use no `.env`:
-```env
-DATABASE_URL=sqlite:///./database.db
-```
+## Configuração da Variável `DATABASE_URL`
+Crie um arquivo `.env` na raiz do repositório (este arquivo não é versionado pelo Git) e defina `DATABASE_URL` conforme o banco escolhido:
 
-### 3. Execução das Migrações
-A estrutura do banco de dados é gerenciada pelo Alembic. Para criar as tabelas no banco de dados configurado, execute:
+* **Usando PostgreSQL (Banco Principal):**
+  ```env
+  DATABASE_URL=postgresql://usuario:senha@localhost:5432/gestao_projetos
+  ```
+
+* **Usando SQLite (Banco Alternativo):**
+  ```env
+  DATABASE_URL=sqlite:///./database.db
+  ```
+
+## Execução das Migrações
+Com o `.env` configurado, execute as migrações do **Alembic** para criar toda a estrutura relacional e aplicar alterações estruturais versionadas (como a adição da coluna `orcamento` na tabela `projetos`):
+
 ```bash
 alembic upgrade head
 ```
 
-### 4. Execução do Povoamento Inicial
-Para preencher o banco com dados de teste (clientes, projetos, profissionais e regras necessárias para demonstração), execute o script de seed:
+*(Caso crie novas alterações nos modelos em `app/models/`, gere uma nova revisão com `alembic revision --autogenerate -m "descricao"` e aplique com `alembic upgrade head`.)*
+
+## Execução do Povoamento
+Execute o script de povoamento inicial localizado em `scripts/` para popular o banco de dados com registros consistentes em todas as entidades principais (clientes, profissionais, projetos, alocações, tarefas, dependências e entregas):
+
 ```bash
-python scripts/seed.py
+python -m scripts.seed
 ```
 
-### 5. Execução da Aplicação
-Inicie o servidor local FastAPI:
+## Execução da Aplicação
+Inicie o servidor FastAPI com Uvicorn a partir da raiz do projeto:
+
 ```bash
 uvicorn app.main:app --reload
 ```
-Acesse a documentação interativa (Swagger UI) em: **http://localhost:8000/docs**
 
----
+* **Endpoint raiz:** `http://127.0.0.1:8000/`
+* **Documentação interativa (Swagger UI):** `http://127.0.0.1:8000/docs`
+* **Documentação alternativa (ReDoc):** `http://127.0.0.1:8000/redoc`
 
-## API e Funcionalidades
+## Principais Endpoints
+As rotas são modularizadas por domínio utilizando `APIRouter` e registradas em `app/main.py` (`projetos`, `clientes`, `profissionais`, `tarefas`, `dependencias`, `entregas`):
 
-### Principais Endpoints
-- `POST /clientes`, `GET /clientes`, `PUT /clientes/{id}`, `DELETE /clientes/{id}`
-- `POST /projetos`, `GET /projetos`, `PUT /projetos/{id}`, `DELETE /projetos/{id}`
-- `POST /profissionais`, `GET /profissionais`, `PUT /profissionais/{id}`, `DELETE /profissionais/{id}`
-- `POST /tarefas`, `GET /tarefas`, `PUT /tarefas/{id}`, `DELETE /tarefas/{id}`
-- `POST /entregas`, `GET /entregas`
-- `POST /projetos/{id}/equipe` (Aloca profissional em projeto)
-- `POST /tarefas/{id}/dependencias` (Cria dependência entre tarefas)
+* **Status da API:**
+  * `GET /` — Verifica se a API está em execução.
+* **Clientes (`app/routers/clientes.py`):**
+  * `POST /clientes` | `GET /clientes` | `GET /clientes/{id}` | `PUT /clientes/{id}` | `DELETE /clientes/{id}`
+* **Projetos (`app/routers/projetos.py`):**
+  * `POST /projetos` | `GET /projetos` | `GET /projetos/{id}` | `PUT /projetos/{id}` | `DELETE /projetos/{id}`
+  * `GET /projetos/{id}/progresso` | `GET /projetos/{id}/estatisticas`
+* **Profissionais (`app/routers/profissionais.py`):**
+  * `POST /profissionais` | `GET /profissionais` | `GET /profissionais/{id}` | `PUT /profissionais/{id}` | `DELETE /profissionais/{id}`
+* **Tarefas (`app/routers/tarefas.py`):**
+  * `POST /tarefas` | `GET /tarefas` | `GET /tarefas/{id}` | `PUT /tarefas/{id}` | `DELETE /tarefas/{id}`
+* **Dependências (`app/routers/dependencias.py`):**
+  * `POST /dependencias` | `GET /dependencias` | `GET /dependencias/{id}` | `DELETE /dependencias/{id}`
+* **Entregas (`app/routers/entregas.py`):**
+  * `POST /entregas` | `GET /entregas` | `GET /entregas/{id}` | `PUT /entregas/{id}` | `DELETE /entregas/{id}`
 
-*Nota: As listagens de Projetos e Tarefas (`GET /projetos` e `GET /tarefas`) possuem paginação implementada no banco de dados usando `page` e `size`.*
+*(As listagens principais suportam paginação diretamente no banco via parâmetros de consulta como `page` e `size` / `offset` e `limit`.)*
 
-### Filtros Disponíveis
-- **Tarefas:** Por status (`Pendente`, `Em Andamento`, etc.) e prioridade (`Alta`, `Média`, `Baixa`).
-- **Projetos:** Por status e por ID de Cliente.
-- **Profissionais:** Por cargo ou especialidade.
+## Filtros Disponíveis
+Os filtros são aplicados diretamente nas consultas SQL via SQLAlchemy e permitem combinação de critérios:
+* **Tarefas (`GET /tarefas`):**
+  * `status`: filtra por situação da tarefa (`Pendente`, `Em Andamento`, `Concluída`, `Cancelada`).
+  * `prioridade`: filtra por nível de prioridade (`Baixa`, `Média`, `Alta`).
+  * `projeto_id`: filtra tarefas de um projeto específico.
+  * `profissional_id`: filtra tarefas atribuídas a um profissional específico.
+* **Projetos (`GET /projetos`):**
+  * `status`: filtra projetos pela situação atual.
+  * `cliente_id`: filtra projetos vinculados a um cliente específico.
+* **Profissionais (`GET /profissionais`):**
+  * `cargo` / `especialidade`: filtra profissionais pela especialidade ou função.
 
-### Consultas Específicas e Complexas
-1. **Tarefas de um Projeto:** Lista todas as tarefas associadas a um projeto específico.
-2. **Projetos de um Profissional:** Lista onde um profissional está alocado.
-3. **Tarefas Atrasadas (Consulta Complexa 1):** Filtra tarefas não concluídas com `prazo_previsto` menor que a data atual, ordenadas pelo prazo.
-4. **Profissionais Sobrecarregados (Consulta Complexa 2):** Agrupa e identifica profissionais alocados em mais de "X" projetos simultaneamente utilizando `GROUP BY` e `COUNT`.
-5. **Estatísticas (Agregação):** Quantidade de tarefas por status e o total de entregas realizadas vs previstas.
+## Consultas Específicas
+* **Consultas Relacionais:**
+  * Listar todas as tarefas pertencentes a um projeto específico (`GET /projetos/{id}/tarefas` ou `GET /tarefas?projeto_id={id}`).
+  * Listar todos os projetos em que um profissional está alocado (`GET /profissionais/{id}/projetos`).
+  * Listar as tarefas dependentes de uma tarefa específica (`GET /tarefas/{id}/dependentes`).
+* **Consultas Complexas (JOIN, intervalos de data, ordenação e agrupamento):**
+  * **Tarefas atrasadas por projeto:** consulta tarefas de um projeto cuja data de prazo previsto já expirou e cujo status não seja `"Concluída"` nem `"Cancelada"`, ordenadas por prazo.
+  * **Carga de trabalho de profissionais:** identifica profissionais alocados em mais de $X$ projetos simultaneamente por meio de `JOIN`, `GROUP BY` e contagem de vínculos.
+* **Estatísticas e Agregações (`GET /projetos/{id}/estatisticas`):**
+  * Agrega no banco (`COUNT` / `GROUP BY`) o total de tarefas por status em um projeto e compara o total de entregas realizadas versus entregas previstas.
 
----
+## Regras de Negócio
+As regras de negócio estão implementadas na camada `app/services/` (como `app/services/tarefa_service.py`) e integradas às operações de escrita e exclusão:
 
-## Regras de Negócio Implementadas
+1. **RN001 — Bloqueio de Execução por Dependência (`PUT /tarefas/{id}`):**
+   * Impede que uma tarefa tenha seu status alterado para `"Em Andamento"` ou `"Concluída"` caso exista qualquer tarefa pré-requisito vinculada a ela que ainda não esteja com status `"Concluída"`. Retorna HTTP `409 Conflict`.
+2. **RN002 — Cálculo de Progresso Consistente:**
+   * Calcula o percentual de conclusão do projeto a partir das tarefas registradas, desconsiderando tarefas `"Cancelada"` no denominador:
+     $$\text{Progresso (\%)} = \frac{\text{Tarefas Concluídas}}{\text{Total de Tarefas} - \text{Tarefas Canceladas}} \times 100$$
+   * Caso não existam tarefas válidas, o percentual retornado é `0%`.
+3. **RN003 — Restrição de Cancelamento e Exclusão com Dependentes (`PUT /tarefas/{id}` e `DELETE /tarefas/{id}`):**
+   * Impede o cancelamento de uma tarefa quando existem outras tarefas dependentes ativas vinculadas a ela (`409 Conflict`), e bloqueia a exclusão (`DELETE`) de tarefas que possuam dependências cadastradas (`409 Conflict` — `"Não é possível excluir a tarefa porque ela possui dependências cadastradas"`).
+4. **RN004 — Integridade de Prazos:**
+   * Valida que o prazo previsto de uma tarefa não ultrapasse a data de término do projeto ao qual pertence e que o prazo previsto de uma entrega esteja dentro do período de vigência do projeto.
 
-- **RN001 - Bloqueio de Execução por Dependência:** O sistema impede que uma tarefa seja movida para "Em Andamento" ou "Concluída" se as tarefas das quais ela depende não estiverem concluídas.
-- **RN003 - Restrição de Cancelamento:** Impede o cancelamento de uma tarefa se outras tarefas que dependem dela já estiverem em andamento ou concluídas.
-- **RN004 - Integridade de Prazos:** Valida se o prazo da tarefa não ultrapassa a data final do projeto e se a data da entrega está dentro do período válido do projeto.
-
----
-
-## Funcionalidade Específica do Tema (F17)
-
-### Cálculo Automatizado de Andamento (Progresso do Projeto)
-**Endpoint:** `GET /projetos/{id}/progresso`
-
-**Descrição:** Em vez de depender de estimativas manuais das equipes, o sistema calcula o progresso real do projeto através de uma lógica dinâmica. 
-- **Regra (RN002):** A fórmula aplica-se da seguinte maneira: `(Tarefas Concluídas / (Total de Tarefas - Tarefas Canceladas)) * 100`.
-- O denominador ignora tarefas canceladas, garantindo que elas não prejudiquem o cálculo de progresso. Caso um projeto não possua tarefas válidas cadastradas, o sistema retorna automaticamente `0%`.
+## Descrição da Funcionalidade Específica do Tema
+A funcionalidade específica do tema **Gestão de Projetos** é o **Monitoramento Automatizado de Progresso e Controle de Cadeia de Dependências**:
+* **Cálculo Automatizado de Progresso (`GET /projetos/{id}/progresso`):** consulta diretamente no banco as tarefas vinculadas ao projeto, isola as tarefas canceladas para evitar distorção de métricas e calcula em tempo real o percentual real de andamento do projeto junto ao resumo quantitativo por status.
+* **Integridade Transacional de Cronograma (`PUT /tarefas/{id}` e `DELETE /tarefas/{id}`):** antes de atualizar o status ou remover uma tarefa, a camada de serviço (`tarefa_service.py`) verifica toda a cadeia de dependências no banco de dados (RN001 e RN003), garantindo que nenhuma etapa avance sem pré-requisitos concluídos nem seja cancelada/removida deixando tarefas dependentes inconsistentes.
