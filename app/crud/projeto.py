@@ -85,3 +85,15 @@ def alocar_profissional_no_projeto(db: Session, projeto_id: int, dados: Alocacao
     db.commit()
     db.refresh(db_alocacao)
     return db_alocacao
+
+def desalocar_profissional(db: Session, projeto_id: int, profissional_id: int):
+    alocacao = db.query(ProjetoProfissional).filter(
+        ProjetoProfissional.projeto_id == projeto_id,
+        ProjetoProfissional.profissional_id == profissional_id
+    ).first()
+    
+    if alocacao:
+        db.delete(alocacao)
+        db.commit()
+        return True
+    return False

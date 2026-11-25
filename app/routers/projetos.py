@@ -137,3 +137,17 @@ def obter_progresso(projeto_id: int, db: Session = Depends(get_db)):
         )
         
     return projeto_service.calcular_progresso_projeto(db=db, projeto_id=projeto_id)
+
+@router.delete("/{projeto_id}/equipe/{profissional_id}", status_code=status.HTTP_204_NO_CONTENT)
+def desalocar_equipe(projeto_id: int, profissional_id: int, db: Session = Depends(get_db)):
+    if crud_projeto.buscar_projeto_por_id(db, projeto_id=projeto_id) is None:
+        raise HTTPException(status_code=404, detail="Projeto não encontrado")
+        
+    sucesso = crud_projeto.desalocar_profissional(db=db, projeto_id=projeto_id, profissional_id=profissional_id)
+    
+    if not sucesso:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Este profissional não está alocado neste projeto"
+        )
+    return None

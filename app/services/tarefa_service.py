@@ -37,10 +37,11 @@ def verificar_cancelamento(db: Session, tarefa_id: int, novo_status: str):
         return
 
     dependentes = crud_tarefa.listar_tarefas_dependentes(db, tarefa_id=tarefa_id)
+    
     dependentes_ativos = [
         dep for dep in dependentes
-        if dep.status not in {
-            StatusTarefa.cancelada.value,
+        if dep.status in {
+            StatusTarefa.em_andamento.value,
             StatusTarefa.concluida.value,
         }
     ]
@@ -51,6 +52,6 @@ def verificar_cancelamento(db: Session, tarefa_id: int, novo_status: str):
             status_code=status.HTTP_409_CONFLICT,
             detail=(
                 f"Não é possível cancelar a tarefa {tarefa_id} "
-                f"porque existem tarefas dependentes ativas (IDs: {ids_ativos})."
+                f"porque existem tarefas dependentes em andamento ou concluídas (IDs: {ids_ativos})."
             ),
         )
