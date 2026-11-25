@@ -14,25 +14,27 @@ Trabalho Prático 2 da disciplina QXD0099 — Desenvolvimento de Software para P
 O projeto consiste em uma API desenvolvida para substituir o uso de planilhas manuais no acompanhamento de projetos de software. A aplicação permite gerenciar clientes, projetos, alocação dinâmica de profissionais em equipes, registrar entregas e controlar tarefas. O sistema resolve o problema de falta de padronização ao calcular automaticamente o progresso real dos projetos com base no status das tarefas, além de gerenciar dependências de execução entre as atividades.
 
 ## Tecnologias Utilizadas
-- **Python 3**
-- **FastAPI** (Framework Web)
-- **SQLAlchemy** (ORM)
-- **Alembic** (Migrações de Banco de Dados)
-- **PostgreSQL** (Banco de Dados Principal)
-- **SQLite** (Banco de Dados de Desenvolvimento/Testes)
-- **Pydantic** (Validação de Dados)
-
+* **Linguagem:** Python 3.11+
+* **Framework Web:** FastAPI (com roteamento modularizado via `APIRouter`)
+* **ORM (Mapeamento Objeto-Relacional):** SQLAlchemy
+* **Validação de Dados:** Pydantic
+* **Banco de Dados Principal:** PostgreSQL (`psycopg` / `psycopg2`)
+* **Banco de Dados Alternativo:** SQLite
+* **Migrações de Banco de Dados:** Alembic
+* **Servidor ASGI:** Uvicorn
+* **Variáveis de Ambiente:** `python-dotenv`
 ---
+## Descrição das Entidades
+Com base nos modelos registrados em `app/models/` (`projeto.py`, `cliente.py`, `profissional.py`, `tarefa.py`, `entrega.py`) e nas tabelas de relacionamento do sistema:
 
-## Modelagem de Dados
-
-### Descrição das Entidades
-1. **Cliente:** Entidade que solicita e financia os projetos.
-2. **Projeto:** A iniciativa central, contendo objetivos, prazos e status.
-3. **Profissional:** Membros da empresa (desenvolvedores, gerentes, testadores) que executam o trabalho.
-4. **EstatisticaProjeto:** Entidade dedicada a armazenar o progresso calculado e quantidade de pendências de um projeto.
-5. **Tarefa:** Atividades que compõem o projeto, com prazos, prioridade e status (Pendente, Em Andamento, Concluída, Cancelada).
-6. **Entrega:** Resultados concretos (protótipos, módulos) esperados em datas específicas.
+1. **Cliente (`clientes`):** Entidade contratante dos projetos (identificador, nome/razão social, e-mail/contato e status).
+2. **Projeto (`projetos`):** Iniciativa de software contratada por um cliente, contendo título, descrição, datas de início e término previsto, status e orçamento (`orcamento`).
+3. **Profissional (`profissionais`):** Membro da equipe técnica ou de gestão (desenvolvedor, analista, testador, gerente), contendo nome, e-mail único, cargo/especialidade e status.
+4. **Alocação de Equipe (`projeto_profissional`):** Tabela associativa entre projetos e profissionais que registra o papel/responsabilidade desempenhado pelo profissional no projeto.
+5. **Tarefa (`tarefas`):** Atividade vinculada a um projeto e atribuída a um profissional, contendo título, descrição, prazo previsto, prioridade (`Baixa`, `Média`, `Alta`) e status (`Pendente`, `Em Andamento`, `Concluída`, `Cancelada`).
+6. **Dependência (`dependencias`):** Registra o vínculo de pré-requisito entre duas tarefas (`tarefa_id` depende da conclusão de `dependencia_id`).
+7. **Entrega (`entregas`):** Marco ou produto concreto esperado do projeto (documentação, protótipo, módulo ou versão), contendo título, descrição, data prevista, data de entrega e status, vinculada às tarefas necessárias por meio da tabela associativa `entrega_tarefa`.
+*Entrega:** Resultados concretos (protótipos, módulos) esperados em datas específicas.
 
 ### Descrição dos Relacionamentos
 - **Cliente 1:N Projeto:** Um cliente pode possuir vários projetos.
