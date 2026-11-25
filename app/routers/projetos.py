@@ -38,13 +38,19 @@ def listar(
     cliente_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
 ):
-    return crud_projeto.listar_projetos(
+    projetos = crud_projeto.listar_projetos(
         db=db,
         page=page,
         size=size,
         status=status_projeto.value if status_projeto else None,
         cliente_id=cliente_id,
     )
+    if not projetos:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Nenhum projeto encontrado com esses critérios"
+        )
+    return projetos
 
 
 @router.get("/{projeto_id}", response_model=ProjetoResponse)
@@ -105,7 +111,13 @@ def listar_tarefas_do_projeto(projeto_id: int, db: Session = Depends(get_db)):
             detail="Projeto não encontrado"
         )
 
-    return crud_tarefa.listar_tarefas_do_projeto(db, projeto_id=projeto_id)
+    tarefas = crud_tarefa.listar_tarefas_do_projeto(db, projeto_id=projeto_id)
+    if not tarefas:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Nenhuma tarefa encontrada para este projeto"
+        )
+    return tarefas
 
 @router.post("/{projeto_id}/equipe", response_model=AlocacaoResponse, status_code=status.HTTP_201_CREATED)
 def alocar_equipe(projeto_id: int, dados: AlocacaoCreate, db: Session = Depends(get_db)):

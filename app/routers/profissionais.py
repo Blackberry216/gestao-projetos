@@ -23,7 +23,10 @@ def listar(
     cargo: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
-    return crud_profissional.listar_profissionais(db=db, page=page, size=size, cargo=cargo)
+    profissionais = crud_profissional.listar_profissionais(db=db, page=page, size=size, cargo=cargo)
+    if not profissionais:
+        raise HTTPException(status_code=404, detail="Nenhum profissional encontrado com esses critérios")
+    return profissionais
 
 
 @router.get("/{profissional_id}", response_model=ProfissionalResponse)

@@ -45,13 +45,19 @@ def listar(
     prioridade: Optional[Prioridade] = Query(None),
     db: Session = Depends(get_db),
 ):
-    return crud_tarefa.listar_tarefas(
+    tarefas = crud_tarefa.listar_tarefas(
         db=db,
         page=page,
         size=size,
         status=status_tarefa.value if status_tarefa else None,
         prioridade=prioridade.value if prioridade else None,
     )
+    if not tarefas:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Nenhuma tarefa encontrada com esses critérios"
+        )
+    return tarefas
 
 
 @router.get("/{tarefa_id}", response_model=TarefaResponse)
@@ -143,4 +149,10 @@ def listar_dependentes(tarefa_id: int, db: Session = Depends(get_db)):
             detail="Tarefa não encontrada"
         )
 
-    return crud_tarefa.listar_tarefas_dependentes(db, tarefa_id=tarefa_id)
+    dependentes = crud_tarefa.listar_tarefas_dependentes(db, tarefa_id=tarefa_id)
+    if not dependentes:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Esta tarefa não possui dependentes cadastrados"
+        )
+    return dependentes

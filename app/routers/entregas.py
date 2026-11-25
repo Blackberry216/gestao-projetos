@@ -24,7 +24,13 @@ def criar(entrega: EntregaCreate, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=List[EntregaResponse])
 def listar(projeto_id: Optional[int] = None, db: Session = Depends(get_db)):
-    return crud_entrega.listar_entregas(db=db, projeto_id=projeto_id)
+    entregas = crud_entrega.listar_entregas(db=db, projeto_id=projeto_id)
+    if not entregas:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Nenhuma entrega encontrada"
+        )
+    return entregas
 
 @router.get("/{entrega_id}", response_model=EntregaResponse)
 def buscar_por_id(entrega_id: int, db: Session = Depends(get_db)):

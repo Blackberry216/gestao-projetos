@@ -16,7 +16,10 @@ def criar(cliente: ClienteCreate, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=List[ClienteResponse])
 def listar(db: Session = Depends(get_db)):
-    return crud_cliente.listar_clientes(db=db)
+    clientes = crud_cliente.listar_clientes(db=db)
+    if not clientes:
+        raise HTTPException(status_code=404, detail="Nenhum cliente cadastrado")
+    return clientes
 
 
 @router.get("/{cliente_id}", response_model=ClienteResponse)
