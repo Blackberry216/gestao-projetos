@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.tarefa import Tarefa, dependencia_tarefa
 
-
 def listar_dependencias(db: Session, tarefa_id: int):
     return (
         db.query(Tarefa)
@@ -10,7 +9,6 @@ def listar_dependencias(db: Session, tarefa_id: int):
         .order_by(Tarefa.id)
         .all()
     )
-
 
 def dependencia_existe(db: Session, tarefa_id: int, depende_de_id: int):
     linha = (
@@ -22,7 +20,6 @@ def dependencia_existe(db: Session, tarefa_id: int, depende_de_id: int):
         .first()
     )
     return linha is not None
-
 
 def cria_ciclo(db: Session, tarefa_id: int, depende_de_id: int):
     visitadas = set()
@@ -46,7 +43,6 @@ def cria_ciclo(db: Session, tarefa_id: int, depende_de_id: int):
 
     return False
 
-
 def adicionar_dependencia(db: Session, tarefa_id: int, depende_de_id: int):
     db.execute(
         dependencia_tarefa.insert().values(
@@ -55,7 +51,6 @@ def adicionar_dependencia(db: Session, tarefa_id: int, depende_de_id: int):
         )
     )
     db.commit()
-
 
 def remover_dependencia(db: Session, tarefa_id: int, depende_de_id: int):
     resultado = db.execute(
