@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.entrega import Entrega
 from app.models.tarefa import Tarefa
 from app.schemas.entrega_schema import EntregaCreate, EntregaUpdate
+from sqlalchemy.exc import IntegrityError
 
 def criar_entrega(db: Session, entrega: EntregaCreate):
     dados_entrega = entrega.model_dump(exclude={"tarefa_ids"})
@@ -44,6 +45,10 @@ def deletar_entrega(db: Session, entrega_id: int):
     if db_entrega is None:
         return False
         
-    db.delete(db_entrega)
-    db.commit()
+    try:
+        db.delete(db_entrega)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise
     return True

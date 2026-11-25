@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import date
 from typing import Optional, List
+from app.schemas.enums import StatusEntrega
 
 class EntregaCreate(BaseModel):
     titulo: str = Field(..., description="Título da entrega")
@@ -13,7 +14,7 @@ class EntregaUpdate(BaseModel):
     titulo: Optional[str] = None
     descricao: Optional[str] = None
     data_prevista: Optional[date] = None
-    status: Optional[str] = None
+    status: Optional[StatusEntrega] = None
     data_realizada: Optional[date] = None
 
 class EntregaResponse(BaseModel):

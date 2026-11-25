@@ -19,3 +19,9 @@ class StatusProjeto(str, Enum):
     em_andamento = "Em Andamento"
     concluido = "Concluído"
     cancelado = "Cancelado"
+
+class StatusEntrega(str, Enum):
+    pendente = "Pendente"
+    concluida = "Concluída"
+    atrasada = "Atrasada"
+    cancelada = "Cancelada"
