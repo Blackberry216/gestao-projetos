@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from typing import List
@@ -15,10 +15,17 @@ def criar(cliente: ClienteCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=List[ClienteResponse])
-def listar(db: Session = Depends(get_db)):
-    clientes = crud_cliente.listar_clientes(db=db)
+def listar(
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    clientes = crud_cliente.listar_clientes(db=db, page=page, size=size)
     if not clientes:
-        raise HTTPException(status_code=404, detail="Nenhum cliente cadastrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Nenhum cliente encontrado nesta página"
+        )
     return clientes
 
 

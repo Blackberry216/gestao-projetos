@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -23,8 +23,13 @@ def criar(entrega: EntregaCreate, db: Session = Depends(get_db)):
     return crud_entrega.criar_entrega(db=db, entrega=entrega)
 
 @router.get("/", response_model=List[EntregaResponse])
-def listar(projeto_id: Optional[int] = None, db: Session = Depends(get_db)):
-    entregas = crud_entrega.listar_entregas(db=db, projeto_id=projeto_id)
+def listar(
+    projeto_id: Optional[int] = None, 
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    entregas = crud_entrega.listar_entregas(db=db, projeto_id=projeto_id, page=page, size=size)
     if not entregas:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

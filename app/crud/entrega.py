@@ -19,11 +19,12 @@ def criar_entrega(db: Session, entrega: EntregaCreate):
     db.refresh(db_entrega)
     return db_entrega
 
-def listar_entregas(db: Session, projeto_id: int = None):
+def listar_entregas(db: Session, projeto_id: Optional[int] = None, page: int = 1, size: int = 10):
     query = db.query(Entrega)
     if projeto_id:
         query = query.filter(Entrega.projeto_id == projeto_id)
-    return query.all()
+    
+    return query.order_by(Entrega.id).offset((page - 1) * size).limit(size).all()
 
 def buscar_entrega_por_id(db: Session, entrega_id: int):
     return db.query(Entrega).filter(Entrega.id == entrega_id).first()

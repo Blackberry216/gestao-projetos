@@ -12,8 +12,8 @@ def criar_cliente(db: Session, cliente: ClienteCreate):
     return db_cliente
 
 
-def listar_clientes(db: Session):
-    return db.query(Cliente).order_by(Cliente.id).all()
+def listar_clientes(db: Session, page: int = 1, size: int = 10):
+    return db.query(Cliente).order_by(Cliente.id).offset((page - 1) * size).limit(size).all()
 
 
 def buscar_cliente_por_id(db: Session, cliente_id: int):
