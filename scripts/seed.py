@@ -11,7 +11,7 @@ from app.models.projeto import Projeto
 from app.models.tarefa import Tarefa, dependencia_tarefa
 from app.models.entrega import Entrega, entrega_tarefa
 from app.models.projeto_profissional import ProjetoProfissional
-from app.models.contrato import Contrato
+from app.models.contrato import Contrato 
 from app.schemas.enums import StatusProjeto, StatusTarefa, Prioridade, StatusEntrega
 
 def popular_banco():
@@ -23,9 +23,7 @@ def popular_banco():
         db.query(Entrega).delete()
         db.query(dependencia_tarefa).delete()
         db.query(Tarefa).delete()
-        
         db.query(Contrato).delete() 
-        
         db.query(ProjetoProfissional).delete()
         db.query(Projeto).delete()
         db.query(Profissional).delete()
@@ -43,8 +41,7 @@ def popular_banco():
         p1 = Profissional(nome="João Dev", email="joao@email.com", cargo="Desenvolvedor")
         p2 = Profissional(nome="Maria Gerente", email="maria@email.com", cargo="Gerente")
         p3 = Profissional(nome="Pedro QA", email="pedro@email.com", cargo="Testador")
-        p4 = Profissional(nome="Ana Frontend", email="ana@email.com", cargo="Desenvolvedor")
-        db.add_all([p1, p2, p3, p4])
+        db.add_all([p1, p2, p3])
         db.commit()
 
         projetos = []
@@ -53,7 +50,7 @@ def popular_banco():
             prazo = hoje + timedelta(days=30 + i) if i <= 3 else hoje + timedelta(days=90)
             
             proj = Projeto(
-                titulo=f"Projeto {i} - Iniciativa {c1.nome if i % 2 == 0 else c2.nome}",
+                titulo=f"Projeto {i} - Iniciativa",
                 objetivo=f"Objetivo do projeto {i}",
                 data_inicio=hoje - timedelta(days=10),
                 prazo_previsto=prazo,
@@ -75,26 +72,25 @@ def popular_banco():
 
         for i in range(5):
             db.add(ProjetoProfissional(projeto_id=projetos[i].id, profissional_id=p1.id, responsabilidade="Dev Backend"))
-        
         for i in range(3):
             db.add(ProjetoProfissional(projeto_id=projetos[i].id, profissional_id=p2.id, responsabilidade="Gerente"))
-            
-        for i in range(2):
-            db.add(ProjetoProfissional(projeto_id=projetos[i].id, profissional_id=p3.id, responsabilidade="QA"))
-            
-        db.add(ProjetoProfissional(projeto_id=projetos[0].id, profissional_id=p4.id, responsabilidade="Frontend"))
+        db.add(ProjetoProfissional(projeto_id=projetos[0].id, profissional_id=p3.id, responsabilidade="QA"))
         db.commit()
 
         tarefas = []
-        t1 = Tarefa(titulo="Modelar Banco", prazo_previsto=hoje - timedelta(days=5), status=StatusTarefa.concluida.value, projeto_id=projetos[0].id, responsavel_id=p1.id, prioridade=Prioridade.alta.value)
-        t2 = Tarefa(titulo="Criar API", prazo_previsto=hoje + timedelta(days=10), status=StatusTarefa.em_andamento.value, projeto_id=projetos[0].id, responsavel_id=p1.id, prioridade=Prioridade.media.value)
-        t3 = Tarefa(titulo="Testar API", prazo_previsto=hoje + timedelta(days=15), status=StatusTarefa.pendente.value, projeto_id=projetos[0].id, responsavel_id=p3.id, prioridade=Prioridade.baixa.value)
-        tarefas.extend([t1, t2, t3])
+       
+        t1 = Tarefa(titulo="Tarefa no Prazo - Projeto 1", prazo_previsto=hoje + timedelta(days=15), status=StatusTarefa.em_andamento.value, projeto_id=projetos[0].id, responsavel_id=p1.id, prioridade=Prioridade.alta.value)
+        
+        t2 = Tarefa(titulo="Tarefa ATRASADA CRÍTICA - Projeto 1", prazo_previsto=hoje - timedelta(days=5), status=StatusTarefa.pendente.value, projeto_id=projetos[0].id, responsavel_id=p1.id, prioridade=Prioridade.alta.value)
+        
+        t3 = Tarefa(titulo="Tarefa ATRASADA mas já CONCLUÍDA - Projeto 1", prazo_previsto=hoje - timedelta(days=10), status=StatusTarefa.concluida.value, projeto_id=projetos[0].id, responsavel_id=p2.id, prioridade=Prioridade.media.value)
+   
+        t4 = Tarefa(titulo="Tarefa ATRASADA mas CANCELADA - Projeto 1", prazo_previsto=hoje - timedelta(days=2), status=StatusTarefa.cancelada.value, projeto_id=projetos[0].id, responsavel_id=p2.id, prioridade=Prioridade.baixa.value)
+        
+        tarefas.extend([t1, t2, t3, t4])
 
-        t4 = Tarefa(titulo="Corrigir Bug Pagamento", prazo_previsto=hoje - timedelta(days=2), status=StatusTarefa.em_andamento.value, projeto_id=projetos[1].id, responsavel_id=p1.id, prioridade=Prioridade.alta.value)
-        t5 = Tarefa(titulo="Atualizar Documentação", prazo_previsto=hoje - timedelta(days=10), status=StatusTarefa.pendente.value, projeto_id=projetos[1].id, responsavel_id=p2.id, prioridade=Prioridade.media.value)
-        t6 = Tarefa(titulo="Reunião Cancelada", prazo_previsto=hoje - timedelta(days=1), status=StatusTarefa.cancelada.value, projeto_id=projetos[1].id, responsavel_id=p2.id, prioridade=Prioridade.baixa.value)
-        tarefas.extend([t4, t5, t6])
+        t5 = Tarefa(titulo="Ajustar Bug do Pagamento (Atrasada) - Projeto 2", prazo_previsto=hoje - timedelta(days=3), status=StatusTarefa.em_andamento.value, projeto_id=projetos[1].id, responsavel_id=p1.id, prioridade=Prioridade.alta.value)
+        tarefas.append(t5)
 
         for i in range(2, 10):
             t = Tarefa(titulo=f"Tarefa Padrão {i}", prazo_previsto=hoje + timedelta(days=20+i), status=StatusTarefa.pendente.value, projeto_id=projetos[i].id, responsavel_id=p2.id, prioridade=Prioridade.media.value)
@@ -103,8 +99,7 @@ def popular_banco():
         db.add_all(tarefas)
         db.commit()
 
-        db.execute(dependencia_tarefa.insert().values(tarefa_id=t3.id, depende_de_id=t2.id))
-        db.execute(dependencia_tarefa.insert().values(tarefa_id=t2.id, depende_de_id=t1.id))
+        db.execute(dependencia_tarefa.insert().values(tarefa_id=t1.id, depende_de_id=t2.id))
         db.commit()
 
         e1 = Entrega(titulo="MVP Banco de Dados", data_prevista=hoje - timedelta(days=5), data_realizada=hoje - timedelta(days=4), status=StatusEntrega.concluida.value, projeto_id=projetos[0].id)
@@ -112,16 +107,14 @@ def popular_banco():
         db.add_all([e1, e2])
         db.commit()
 
-        db.execute(entrega_tarefa.insert().values(entrega_id=e1.id, tarefa_id=t1.id))
-        db.execute(entrega_tarefa.insert().values(entrega_id=e2.id, tarefa_id=t2.id))
-        db.execute(entrega_tarefa.insert().values(entrega_id=e2.id, tarefa_id=t3.id))
-        
+        db.execute(entrega_tarefa.insert().values(entrega_id=e1.id, tarefa_id=t3.id))
+        db.execute(entrega_tarefa.insert().values(entrega_id=e2.id, tarefa_id=t1.id))
         db.commit()
+        
         print("✅ Banco de dados populado com sucesso! Pronto para a apresentação.")
-        print(f"   - {len(projetos)} Projetos criados (testa paginação)")
-        print(f"   - {len(tarefas)} Tarefas criadas (testa filtros)")
-        print("   - 5 Contratos criados (testa 1:1)")
-        print("   - João alocado em 5 projetos (testa sobrecarga)")
+        print("   - 12 Projetos criados")
+        print("   - 5 Contratos criados")
+        print("   - 2 Tarefas ATRASADAS reais (Projeto 1 e Projeto 2) prontas para o RF007!")
 
     except Exception as e:
         print(f"❌ Erro ao popular o banco: {e}")
