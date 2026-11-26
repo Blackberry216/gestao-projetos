@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Date, ForeignKey, Numeric
 import datetime
 from app.database import Base
-
+from sqlalchemy.orm import relationship
 
 class Projeto(Base):
     __tablename__ = "projetos"
@@ -14,3 +14,4 @@ class Projeto(Base):
     status = Column(String, default="Planejado")
     cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)
     orcamento = Column(Numeric(12, 2), nullable=True)
+    contrato = relationship("Contrato", back_populates="projeto", uselist=False)

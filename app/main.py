@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import projetos, clientes, profissionais, tarefas, dependencias, entregas, estatisticas, consultas
+from app.routers import projetos, clientes, profissionais, tarefas, dependencias, entregas, estatisticas, consultas, contratos
 from app.models import projeto, cliente, profissional, tarefa, entrega
 
 app = FastAPI(title="Sistema de Gestão de Projetos")
@@ -11,6 +11,7 @@ app.include_router(dependencias.router)
 app.include_router(entregas.router)
 app.include_router(estatisticas.router)
 app.include_router(consultas.router)
+app.include_router(contratos.router)
 
 @app.get("/")
 def root():
