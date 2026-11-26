@@ -12,6 +12,7 @@ from app.models.tarefa import Tarefa, dependencia_tarefa
 from app.models.entrega import Entrega, entrega_tarefa
 from app.models.projeto_profissional import ProjetoProfissional
 from app.schemas.enums import StatusProjeto, StatusTarefa, Prioridade, StatusEntrega
+from app.models.contrato import Contrato
 
 def popular_banco():
     db = SessionLocal()
