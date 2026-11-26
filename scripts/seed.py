@@ -4,15 +4,15 @@ from datetime import date, timedelta
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app.database import SessionLocal, engine
+from app.database import SessionLocal
 from app.models.cliente import Cliente
 from app.models.profissional import Profissional
 from app.models.projeto import Projeto
 from app.models.tarefa import Tarefa, dependencia_tarefa
 from app.models.entrega import Entrega, entrega_tarefa
 from app.models.projeto_profissional import ProjetoProfissional
-from app.schemas.enums import StatusProjeto, StatusTarefa, Prioridade, StatusEntrega
 from app.models.contrato import Contrato
+from app.schemas.enums import StatusProjeto, StatusTarefa, Prioridade, StatusEntrega
 
 def popular_banco():
     db = SessionLocal()
@@ -23,6 +23,9 @@ def popular_banco():
         db.query(Entrega).delete()
         db.query(dependencia_tarefa).delete()
         db.query(Tarefa).delete()
+        
+        db.query(Contrato).delete() 
+        
         db.query(ProjetoProfissional).delete()
         db.query(Projeto).delete()
         db.query(Profissional).delete()
@@ -44,89 +47,81 @@ def popular_banco():
         db.add_all([p1, p2, p3, p4])
         db.commit()
 
-        proj1 = Projeto(
-            titulo="App Mobile TechCorp", 
-            objetivo="Criar app de vendas",
-            data_inicio=hoje - timedelta(days=1),
-            prazo_previsto=hoje + timedelta(days=30),
-            status=StatusProjeto.em_andamento.value,
-            cliente_id=c1.id
-        )
-        proj2 = Projeto(
-            titulo="Portal Financeiro XYZ", 
-            objetivo="Modernizar internet banking",
-            data_inicio=hoje - timedelta(days=60),
-            prazo_previsto=hoje + timedelta(days=10),
-            status=StatusProjeto.em_andamento.value,
-            cliente_id=c2.id
-        )
-        proj3 = Projeto(
-            titulo="Sistema de Estoque", 
-            objetivo="Controle de armazém",
-            data_inicio=hoje + timedelta(days=5),
-            prazo_previsto=hoje + timedelta(days=90),
-            status=StatusProjeto.planejado.value,
-            cliente_id=c3.id
-        )
-        db.add_all([proj1, proj2, proj3])
+        projetos = []
+        for i in range(1, 13):
+            status = StatusProjeto.em_andamento.value if i <= 3 else StatusProjeto.planejado.value
+            prazo = hoje + timedelta(days=30 + i) if i <= 3 else hoje + timedelta(days=90)
+            
+            proj = Projeto(
+                titulo=f"Projeto {i} - Iniciativa {c1.nome if i % 2 == 0 else c2.nome}",
+                objetivo=f"Objetivo do projeto {i}",
+                data_inicio=hoje - timedelta(days=10),
+                prazo_previsto=prazo,
+                status=status,
+                cliente_id=c1.id if i % 2 == 0 else c2.id
+            )
+            projetos.append(proj)
+            db.add(proj)
         db.commit()
 
-        db.add_all([
-            ProjetoProfissional(projeto_id=proj1.id, profissional_id=p1.id, responsabilidade="Dev Backend"),
-            ProjetoProfissional(projeto_id=proj2.id, profissional_id=p1.id, responsabilidade="Dev Backend"),
-            ProjetoProfissional(projeto_id=proj3.id, profissional_id=p1.id, responsabilidade="Consultor"),
-            
-            ProjetoProfissional(projeto_id=proj1.id, profissional_id=p2.id, responsabilidade="Gerente"),
-            ProjetoProfissional(projeto_id=proj2.id, profissional_id=p2.id, responsabilidade="Gerente"),
-            
-            ProjetoProfissional(projeto_id=proj1.id, profissional_id=p3.id, responsabilidade="QA"),
-        ])
+        for i in range(5):
+            contrato = Contrato(
+                projeto_id=projetos[i].id,
+                valor_total=10000.00 * (i + 1),
+                data_assinatura=hoje - timedelta(days=15)
+            )
+            db.add(contrato)
         db.commit()
 
+        for i in range(5):
+            db.add(ProjetoProfissional(projeto_id=projetos[i].id, profissional_id=p1.id, responsabilidade="Dev Backend"))
         
-        t1 = Tarefa(titulo="Modelar Banco de Dados", prazo_previsto=hoje - timedelta(days=5), status=StatusTarefa.concluida.value, projeto_id=proj1.id, responsavel_id=p1.id, prioridade=Prioridade.alta.value)
-        t2 = Tarefa(titulo="Criar API de Login", prazo_previsto=hoje + timedelta(days=10), status=StatusTarefa.em_andamento.value, projeto_id=proj1.id, responsavel_id=p1.id, prioridade=Prioridade.media.value)
-        t3 = Tarefa(titulo="Testar Tela de Login", prazo_previsto=hoje + timedelta(days=15), status=StatusTarefa.pendente.value, projeto_id=proj1.id, responsavel_id=p3.id, prioridade=Prioridade.baixa.value)
-        
-        t4 = Tarefa(titulo="Corrigir Bug de Pagamento", prazo_previsto=hoje - timedelta(days=2), status=StatusTarefa.em_andamento.value, projeto_id=proj2.id, responsavel_id=p1.id, prioridade=Prioridade.alta.value)
-        t5 = Tarefa(titulo="Atualizar Documentação", prazo_previsto=hoje - timedelta(days=10), status=StatusTarefa.pendente.value, projeto_id=proj2.id, responsavel_id=p2.id, prioridade=Prioridade.media.value)
-        t6 = Tarefa(titulo="Reunião de Alinhamento", prazo_previsto=hoje - timedelta(days=1), status=StatusTarefa.cancelada.value, projeto_id=proj2.id, responsavel_id=p2.id, prioridade=Prioridade.baixa.value)
-        
-        t7 = Tarefa(titulo="Levantar Requisitos", prazo_previsto=hoje + timedelta(days=20), status=StatusTarefa.pendente.value, projeto_id=proj3.id, responsavel_id=p2.id, prioridade=Prioridade.alta.value)
-        
-        db.add_all([t1, t2, t3, t4, t5, t6, t7])
+        for i in range(3):
+            db.add(ProjetoProfissional(projeto_id=projetos[i].id, profissional_id=p2.id, responsabilidade="Gerente"))
+            
+        for i in range(2):
+            db.add(ProjetoProfissional(projeto_id=projetos[i].id, profissional_id=p3.id, responsabilidade="QA"))
+            
+        db.add(ProjetoProfissional(projeto_id=projetos[0].id, profissional_id=p4.id, responsabilidade="Frontend"))
+        db.commit()
+
+        tarefas = []
+        t1 = Tarefa(titulo="Modelar Banco", prazo_previsto=hoje - timedelta(days=5), status=StatusTarefa.concluida.value, projeto_id=projetos[0].id, responsavel_id=p1.id, prioridade=Prioridade.alta.value)
+        t2 = Tarefa(titulo="Criar API", prazo_previsto=hoje + timedelta(days=10), status=StatusTarefa.em_andamento.value, projeto_id=projetos[0].id, responsavel_id=p1.id, prioridade=Prioridade.media.value)
+        t3 = Tarefa(titulo="Testar API", prazo_previsto=hoje + timedelta(days=15), status=StatusTarefa.pendente.value, projeto_id=projetos[0].id, responsavel_id=p3.id, prioridade=Prioridade.baixa.value)
+        tarefas.extend([t1, t2, t3])
+
+        t4 = Tarefa(titulo="Corrigir Bug Pagamento", prazo_previsto=hoje - timedelta(days=2), status=StatusTarefa.em_andamento.value, projeto_id=projetos[1].id, responsavel_id=p1.id, prioridade=Prioridade.alta.value)
+        t5 = Tarefa(titulo="Atualizar Documentação", prazo_previsto=hoje - timedelta(days=10), status=StatusTarefa.pendente.value, projeto_id=projetos[1].id, responsavel_id=p2.id, prioridade=Prioridade.media.value)
+        t6 = Tarefa(titulo="Reunião Cancelada", prazo_previsto=hoje - timedelta(days=1), status=StatusTarefa.cancelada.value, projeto_id=projetos[1].id, responsavel_id=p2.id, prioridade=Prioridade.baixa.value)
+        tarefas.extend([t4, t5, t6])
+
+        for i in range(2, 10):
+            t = Tarefa(titulo=f"Tarefa Padrão {i}", prazo_previsto=hoje + timedelta(days=20+i), status=StatusTarefa.pendente.value, projeto_id=projetos[i].id, responsavel_id=p2.id, prioridade=Prioridade.media.value)
+            tarefas.append(t)
+
+        db.add_all(tarefas)
         db.commit()
 
         db.execute(dependencia_tarefa.insert().values(tarefa_id=t3.id, depende_de_id=t2.id))
-        
         db.execute(dependencia_tarefa.insert().values(tarefa_id=t2.id, depende_de_id=t1.id))
         db.commit()
 
-        e1 = Entrega(
-            titulo="MVP Banco de Dados",
-            data_prevista=hoje - timedelta(days=5),
-            data_realizada=hoje - timedelta(days=4),
-            status=StatusEntrega.concluida.value,
-            projeto_id=proj1.id
-        )
-       
-        e2 = Entrega(
-            titulo="Versão Beta do App",
-            data_prevista=hoje + timedelta(days=25),
-            data_realizada=None,
-            status=StatusEntrega.pendente.value,
-            projeto_id=proj1.id
-        )
+        e1 = Entrega(titulo="MVP Banco de Dados", data_prevista=hoje - timedelta(days=5), data_realizada=hoje - timedelta(days=4), status=StatusEntrega.concluida.value, projeto_id=projetos[0].id)
+        e2 = Entrega(titulo="Versão Beta", data_prevista=hoje + timedelta(days=25), data_realizada=None, status=StatusEntrega.pendente.value, projeto_id=projetos[0].id)
         db.add_all([e1, e2])
         db.commit()
 
         db.execute(entrega_tarefa.insert().values(entrega_id=e1.id, tarefa_id=t1.id))
-        
         db.execute(entrega_tarefa.insert().values(entrega_id=e2.id, tarefa_id=t2.id))
         db.execute(entrega_tarefa.insert().values(entrega_id=e2.id, tarefa_id=t3.id))
         
         db.commit()
         print("✅ Banco de dados populado com sucesso! Pronto para a apresentação.")
+        print(f"   - {len(projetos)} Projetos criados (testa paginação)")
+        print(f"   - {len(tarefas)} Tarefas criadas (testa filtros)")
+        print("   - 5 Contratos criados (testa 1:1)")
+        print("   - João alocado em 5 projetos (testa sobrecarga)")
 
     except Exception as e:
         print(f"❌ Erro ao popular o banco: {e}")
