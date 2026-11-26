@@ -18,9 +18,6 @@ class Entrega(Base):
     data_prevista = Column(Date, nullable=False)
     data_realizada = Column(Date, nullable=True)
     status = Column(String, default="Pendente")
-    
     projeto_id = Column(Integer, ForeignKey("projetos.id"), nullable=False)
-    
-    projeto = relationship("Projeto", backref="entregas")
-    
+    projeto = relationship("Projeto", back_populates="entregas")
     tarefas = relationship("Tarefa", secondary=entrega_tarefa, backref="entregas")

@@ -15,3 +15,6 @@ class Projeto(Base):
     cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)
     orcamento = Column(Numeric(12, 2), nullable=True)
     contrato = relationship("Contrato", back_populates="projeto", uselist=False)
+    alocacoes = relationship("ProjetoProfissional", back_populates="projeto")
+    tarefas = relationship("Tarefa", back_populates="projeto")
+    entregas = relationship("Entrega", back_populates="projeto")
